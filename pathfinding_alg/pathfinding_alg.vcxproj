@@ -130,13 +130,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="astar.ixx" />
-    <ClCompile Include="bfs.ixx" />
-    <ClCompile Include="dfs.ixx" />
-    <ClCompile Include="dijkstra.ixx" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="node.ixx" />
-    <ClCompile Include="runner.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="astar.h" />

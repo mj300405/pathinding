@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <functional>
 #include <compare>
+#include <ranges>
 
 
 
@@ -87,29 +88,43 @@ public:
 
     Node* get_end_node() { return end; }
 
-    std::vector<Node*> get_neighbors(Node* node) {
-        std::vector<Node*> neighbors;
-        int x = node->x;
-        int y = node->y;
+    //std::vector<Node*> get_neighbors(Node* node) {
+    //    std::vector<Node*> neighbors;
+    //    int x = node->x;
+    //    int y = node->y;
 
-        // Check 4 neighboring nodes
-        for (int i = -1; i <= 1; i += 2) {
-            int nx = x + i;
-            int ny = y;
-            Node* neighbor = get_node(nx, ny);
-            if (neighbor != nullptr) {
-                neighbors.push_back(neighbor);
-            }
-        }
-        for (int j = -1; j <= 1; j += 2) {
-            int nx = x;
-            int ny = y + j;
-            Node* neighbor = get_node(nx, ny);
-            if (neighbor != nullptr) {
-                neighbors.push_back(neighbor);
-            }
-        }
-        return neighbors;
+    //    // Check 4 neighboring nodes
+    //    for (int i = -1; i <= 1; i += 2) {
+    //        int nx = x + i;
+    //        int ny = y;
+    //        Node* neighbor = get_node(nx, ny);
+    //        if (neighbor != nullptr) {
+    //            neighbors.push_back(neighbor);
+    //        }
+    //    }
+    //    for (int j = -1; j <= 1; j += 2) {
+    //        int nx = x;
+    //        int ny = y + j;
+    //        Node* neighbor = get_node(nx, ny);
+    //        if (neighbor != nullptr) {
+    //            neighbors.push_back(neighbor);
+    //        }
+    //    }
+    //    return neighbors;
+    //}
+
+    std::vector<Node*> get_neighbors(Node* node) {
+        static const std::pair<int, int> offsets[] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+
+        auto neighbors = offsets
+            | std::views::transform([=](auto offset) {
+            return get_node(node->x + offset.first, node->y + offset.second);
+                })
+            | std::views::filter([](auto neighbor) {
+                    return neighbor != nullptr;
+                });
+
+                return std::vector<Node*>(neighbors.begin(), neighbors.end());
     }
 
     double get_edge_cost(Node* node1, Node* node2) {

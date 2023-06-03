@@ -10,28 +10,21 @@
 #include "bfs.h"
 
 int main() {
-    int width = 10;
-    int height = 10;
-    int startX = 0;
-    int startY = 0;
-    int endX = 9;
-    int endY = 9;
+    Grid grid(10, 10);
+    Node* start = grid.get_node(0, 0);
+    Node* end = grid.get_node(9, 9);
+    MultiPathfinder pathfinder;
+    auto paths = pathfinder.runAll(grid, start, end);
 
-    PathfindingRunner runner(width, height, startX, startY, endX, endY);
-    runner.run();
-
-    // Print the paths found by the algorithms
-    auto paths = runner.get_paths();
-    for (const auto& path : paths) {
+    // For each algorithm and its path
+    for (const auto& [algorithm, path] : paths) {
+        std::cout << "Path found by " << algorithm << ":\n";
         for (const auto& node : path) {
             std::cout << "(" << node->x << ", " << node->y << ") ";
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
+
 
     return 0;
 }
-
-
-
-// TODO make multithread running

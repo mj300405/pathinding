@@ -11,53 +11,81 @@
 #include "bfs.h"
 
 
-class PathfindingRunner {
-public:
-    PathfindingRunner(int width, int height, int startX, int startY, int endX, int endY)
-        : m_width(width), m_height(height), m_startX(startX), m_startY(startY), m_endX(endX), m_endY(endY) {}
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <unordered_map>
+#include <vector>
+#include <optional>
 
-    void run() {
-        // Declare instances of your pathfinding algorithms
-        Dijkstra dijkstra;
-        AStar astar;
-        BFS bfs;
-        DFS dfs;
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <unordered_map>
+#include <vector>
+#include <optional>
 
-        // Create jthreads to run each algorithm
-        std::jthread t1(&PathfindingRunner::find_path, std::ref(dijkstra));
-        std::jthread t2(&PathfindingRunner::find_path, std::ref(astar));
-        std::jthread t3(&PathfindingRunner::find_path, std::ref(bfs));
-        std::jthread t4(&PathfindingRunner::find_path, std::ref(dfs));
-
-        // No need to manually join jthreads; they automatically join on destruction
-    }
-
-    std::vector<std::vector<Node*>> get_paths() const {
-        return m_paths;
-    }
-
+class MultiPathfinder {
 private:
-    void find_path(std::stop_token stop_token, PathfindingAlgorithm& algorithm) {
-        // Each thread creates its own grid and start/end nodes
-        Grid grid(m_width, m_height);
-        Node* start = grid.get_node(m_startX, m_startY);
-        Node* end = grid.get_node(m_endX, m_endY);
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::unordered_map<std::string, std::vector<Node*>> paths;
 
-        std::vector<Node*> path = algorithm.find_path(grid, start, end);
-
-        // If the stop_token is signaled, return early
-        if (stop_token.stop_requested()) {
-            return;
+public:
+    void runAStar(Grid& grid, Node* start, Node* end) {
+        AStar astar;
+        auto path = astar.find_path(grid, start, end);
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            paths["AStar"] = path;
         }
-
-        // Add the path to the list of paths
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_paths.push_back(path);
+        cv.notify_one();
     }
 
-    int m_width, m_height;
-    int m_startX, m_startY;
-    int m_endX, m_endY;
-    std::vector<std::vector<Node*>> m_paths;
-    std::mutex m_mutex;
+    void runDijkstra(Grid& grid, Node* start, Node* end) {
+        Dijkstra dijkstra;
+        auto path = dijkstra.find_path(grid, start, end);
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            paths["Dijkstra"] = path;
+        }
+        cv.notify_one();
+    }
+
+    void runBFS(Grid& grid, Node* start, Node* end) {
+        BFS bfs;
+        auto path = bfs.find_path(grid, start, end);
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            paths["BFS"] = path;
+        }
+        cv.notify_one();
+    }
+
+    void runDFS(Grid& grid, Node* start, Node* end) {
+        DFS dfs;
+        auto path = dfs.find_path(grid, start, end);
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            paths["DFS"] = path;
+        }
+        cv.notify_one();
+    }
+
+    std::unordered_map<std::string, std::vector<Node*>> runAll(Grid& grid, Node* start, Node* end) {
+        std::thread t1(&MultiPathfinder::runAStar, this, std::ref(grid), start, end);
+        std::thread t2(&MultiPathfinder::runDijkstra, this, std::ref(grid), start, end);
+        std::thread t3(&MultiPathfinder::runBFS, this, std::ref(grid), start, end);
+        std::thread t4(&MultiPathfinder::runDFS, this, std::ref(grid), start, end);
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(lock, [this] { return paths.size() == 4; });
+        }
+        t1.join();
+        t2.join();
+        t3.join();
+        t4.join();
+        return paths;
+    }
 };
+

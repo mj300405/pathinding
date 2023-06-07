@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include <queue>
 #include <stack>
@@ -37,6 +38,10 @@ public:
     bool operator==(const Node* other) {
         return (x == other->x) && (y == other->y);
     }
+
+    int getX() const { return x; }
+
+    int getY() const { return y; }
 };
 
 class Grid {
@@ -88,31 +93,6 @@ public:
 
     Node* get_end_node() { return end; }
 
-    //std::vector<Node*> get_neighbors(Node* node) {
-    //    std::vector<Node*> neighbors;
-    //    int x = node->x;
-    //    int y = node->y;
-
-    //    // Check 4 neighboring nodes
-    //    for (int i = -1; i <= 1; i += 2) {
-    //        int nx = x + i;
-    //        int ny = y;
-    //        Node* neighbor = get_node(nx, ny);
-    //        if (neighbor != nullptr) {
-    //            neighbors.push_back(neighbor);
-    //        }
-    //    }
-    //    for (int j = -1; j <= 1; j += 2) {
-    //        int nx = x;
-    //        int ny = y + j;
-    //        Node* neighbor = get_node(nx, ny);
-    //        if (neighbor != nullptr) {
-    //            neighbors.push_back(neighbor);
-    //        }
-    //    }
-    //    return neighbors;
-    //}
-
     std::vector<Node*> get_neighbors(Node* node) {
         static const std::pair<int, int> offsets[] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
 
@@ -136,9 +116,29 @@ public:
         // Return the distance as the edge cost
         return distance;
     }
+
+    int get_width() const { return width; } // Assuming you have a width field
+
+    int get_height() const { return height; } // Assuming you have a height field
+
 };
 
 class PathfindingAlgorithm {
 public:
-    virtual std::vector<Node*> find_path(Grid& grid, Node* start, Node* end) = 0;
+    virtual void setup(Grid& grid, Node* start, Node* end) = 0;
+    virtual bool step(Grid& grid) = 0;
+    virtual std::vector<Node*> get_path() = 0;
+    virtual std::unordered_set<Node*> get_visited_nodes() = 0;
 };
+
+
+
+
+
+std::string serialize_path(const std::vector<Node*>& path) {
+    std::string result;
+    for (const auto& node : path) {
+        result += std::to_string(node->x) + ',' + std::to_string(node->y) + ';';
+    }
+    return result;
+}

@@ -13,74 +13,93 @@
 
 class Dijkstra : public PathfindingAlgorithm {
 private:
-    // Keep track of the parent node for each node
+    Node* start;
+    Node* end;
     std::unordered_map<Node*, Node*> came_from;
+    std::unordered_map<Node*, int> g_score;
+    std::unordered_set<Node*> open_set;
+    std::unordered_set<Node*> closed_set;
+    std::vector<Node*> path;
 
 public:
-    // Find a path from start to end in the given grid
-    std::vector<Node*> find_path(Grid& grid, Node* start, Node* end) {
-        std::vector<Node*> path;
+    void setup(Grid& grid, Node* start, Node* end) override {
+        this->start = start;
+        this->end = end;
+        came_from.clear();
+        g_score.clear();
+        open_set.clear();
+        closed_set.clear();
+        path.clear();
 
-        // Initialize the open and closed sets
-        std::vector<Node*> open_set;
-        open_set.push_back(start);
+        g_score[start] = 0;
+        open_set.insert(start);
+    }
 
-        std::vector<Node*> closed_set;
+    bool step(Grid& grid) override {
+        if (open_set.empty()) {
+            return false;
+        }
 
-        // Keep track of the cost of getting to each node
-        std::unordered_map<Node*, int> cost;
-        cost[start] = 0;
+        // Find the node in the open set with the lowest g-score
+        auto current = *std::min_element(open_set.begin(), open_set.end(), [&](Node* a, Node* b) {
+            int g_score_a = INT_MAX;
+            int g_score_b = INT_MAX;
 
-        // Loop until the open set is empty (i.e., we've searched all reachable nodes)
-        while (!open_set.empty()) {
-            // Find the node in the open set with the lowest cost
-            auto current = *std::min_element(open_set.begin(), open_set.end(), [&](Node* a, Node* b) {
-                return cost[a] < cost[b];
-                });
-
-            // If we've reached the goal, we're done
-            if (current == end) {
-                // Reconstruct the path from the end node to the start node
-                path.push_back(current);
-                while (current != start) {
-                    current = came_from[current];
-                    path.push_back(current);
-                }
-                std::reverse(path.begin(), path.end());
-                break;
+            if (g_score.count(a) > 0) {
+                g_score_a = g_score[a];
             }
 
-            // Remove the current node from the open set
-            open_set.erase(std::remove(open_set.begin(), open_set.end(), current), open_set.end());
+            if (g_score.count(b) > 0) {
+                g_score_b = g_score[b];
+            }
 
-            // Add the current node to the closed set
-            closed_set.push_back(current);
+            return g_score_a < g_score_b;
+            });
 
-            // Explore the neighbors of the current node
-            for (auto neighbor : grid.get_neighbors(current)) {
-                // If the neighbor is already in the closed set, or it is an obstacle, skip it
-                if (std::find(closed_set.begin(), closed_set.end(), neighbor) != closed_set.end() || neighbor->obstacle) {
-                    continue;
-                }
+        open_set.erase(current);
+        closed_set.insert(current);
 
-                // Compute the tentative cost for this neighbor
-                int tentative_cost = cost[current] + grid.get_edge_cost(current, neighbor);
+        for (auto neighbor : grid.get_neighbors(current)) {
+            if (closed_set.count(neighbor) > 0 || neighbor->obstacle) {
+                continue;
+            }
 
-                // If the neighbor is not in the open set, add it
-                if (std::find(open_set.begin(), open_set.end(), neighbor) == open_set.end()) {
-                    open_set.push_back(neighbor);
-                }
-                // If the tentative cost is higher than the current cost for the neighbor, skip it
-                else if (tentative_cost >= cost[neighbor]) {
-                    continue;
-                }
+            int tentative_g_score = g_score[current] + grid.get_edge_cost(current, neighbor);
 
-                // We've found a better path to the neighbor, so update its cost
+            if (!g_score.count(neighbor) || tentative_g_score < g_score[neighbor]) {
                 came_from[neighbor] = current;
-                cost[neighbor] = tentative_cost;
+                g_score[neighbor] = tentative_g_score;
+
+                if (open_set.count(neighbor) == 0) {
+                    open_set.insert(neighbor);
+                }
             }
         }
 
+        return true;
+    }
+
+    std::vector<Node*> get_path() override {
+        if (path.empty()) {
+            Node* current = end;
+            while (current != start) {
+                path.push_back(current);
+                if (came_from.find(current) != came_from.end()) {
+                    current = came_from[current];
+                }
+                else {
+                    break;  // or throw an exception
+                }
+            }
+            path.push_back(start); // add the start node to the path
+            std::reverse(path.begin(), path.end());
+        }
         return path;
     }
+
+    std::unordered_set<Node*> get_visited_nodes() override {
+        return closed_set;
+    }
 };
+
+

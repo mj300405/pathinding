@@ -1,28 +1,18 @@
 #pragma once
 
-#include "astar.h"
-#include "dijkstra.h"
-#include "dfs.h"
-#include "bfs.h"
-
-
+#include <emscripten.h>
 #include <vector>
 #include <thread>
 #include <memory>
-#include "astar.h"
-#include "dijkstra.h"
-#include "dfs.h"
-#include "bfs.h"
-
-#include <vector>
-#include <thread>
-#include <memory>
+#include <mutex>
 #include "astar.h"
 #include "dijkstra.h"
 #include "dfs.h"
 #include "bfs.h"
 
 class PathfindingRunner {
+private:
+    std::mutex mutex;
 public:
     void runAlgorithms(Grid& grid, Node* start, Node* end) {
         std::vector<std::unique_ptr<PathfindingAlgorithm>> algorithms;
@@ -37,39 +27,47 @@ public:
             threads.push_back(std::thread([algorithm = algorithm.get(), &grid, start, end]() {
                 algorithm->setup(grid, start, end);
                 while (algorithm->step(grid)) {
-                    // Export the current state of the algorithm for visualization.
-                    // Note that this would need to be done in a thread-safe manner,
-                    // since multiple threads could be trying to export their state at the same time.
+                    // To ensure thread safety, we might use a lock here. For example, a mutex.
+                    std::lock_guard<std::mutex> lock(mutex);
                     exportStateForVisualization(algorithm->get_visited_nodes(), algorithm->get_path());
 
-                    // Sleep for a bit to slow down the loop and allow the visualization to update.
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 }
-                auto path = algorithm->get_path();  // Save or display the final path
-                // Remember to clear the grid or reset its state here if necessary.
+                // After finishing the algorithm's work, save or display the final path.
+                // Don't forget to clear the grid or reset its state if necessary.
                 }));
         }
 
-        // Join all threads
         for (auto& thread : threads) {
             thread.join();
         }
     }
 
+    // Declare updateVisualization function to be called from C++
+    EM_JS(void, updateVisualization, (const std::vector<int>& visitedNodes, const std::vector<int>& path), {
+        // This is JavaScript code
+        // Call the updateVisualization function defined in the React component
+        window.updateVisualization(visitedNodes, path);
+        });
+
     void exportStateForVisualization(const std::unordered_set<Node*>& visitedNodes, const std::vector<Node*>& path) {
-        // This function would need to somehow notify the JavaScript environment about the current state
-        // of the algorithm, so it can update the visualization. The specific mechanism for doing this will
-        // depend on how you're compiling and loading the WebAssembly module.
-        //
-        // For example, you might do something like this:
-        //   EM_ASM({
-        //     updateVisualization($0, $1);
-        //   }, visitedNodes, path);
-        //
-        // where updateVisualization is a JavaScript function that updates the visualization based on
-        // the current visited nodes and path.
+        // Convert visitedNodes and path to arrays of IDs...
+        std::vector<int> visitedNodes_ids;
+        for (auto& node : visitedNodes) {
+            visitedNodes_ids.push_back(node->id);
+        }
+
+        std::vector<int> path_ids;
+        for (auto& node : path) {
+            path_ids.push_back(node->id);
+        }
+
+        // Call the JavaScript function
+        updateVisualization(visitedNodes_ids, path_ids);
     }
+
 };
+
 
 
 

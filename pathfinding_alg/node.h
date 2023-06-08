@@ -19,10 +19,12 @@ public:
     int y;
     bool visited;
     bool obstacle;
+    int id;
+    static int next_id;
 
-    Node() : x(0), y(0), visited(false), obstacle(false) {}
+    Node() : x(0), y(0), visited(false), obstacle(false), id(next_id++) {}
 
-    Node(int x, int y) : x(x), y(y), visited(false), obstacle(false) {}
+    Node(int x, int y) : x(x), y(y), visited(false), obstacle(false), id(next_id++) {}
 
     // A* search heuristic function
     int heuristic(Node* other) {
@@ -43,6 +45,8 @@ public:
 
     int getY() const { return y; }
 };
+
+int Node::next_id = 0;
 
 class Grid {
 private:

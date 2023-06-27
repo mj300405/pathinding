@@ -50,6 +50,18 @@ public:
         Node* current = open_set.front();
         open_set.pop();
 
+        if (current == end) {
+            if (path.empty()) {
+                Node* node = end;
+                while (node) {
+                    path.push_back(node);
+                    node = came_from[node];
+                }
+                std::reverse(path.begin(), path.end());
+            }
+            return false;
+        }
+
         for (auto neighbor : grid.get_neighbors(current)) {
             if (visited_nodes.count(neighbor) || neighbor->obstacle)
                 continue;
@@ -61,6 +73,7 @@ public:
 
         return true;
     }
+
 
     std::vector<Node*> get_path() override {
         return path;

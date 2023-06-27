@@ -56,6 +56,10 @@ public:
             return g_score_a < g_score_b;
             });
 
+        if (current == end) {
+            return false;
+        }
+
         open_set.erase(current);
         closed_set.insert(current);
 
@@ -78,6 +82,7 @@ public:
 
         return true;
     }
+
 
     std::vector<Node*> get_path() override {
         if (path.empty()) {

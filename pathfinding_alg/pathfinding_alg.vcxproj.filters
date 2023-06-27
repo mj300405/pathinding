@@ -18,6 +18,12 @@
     <ClCompile Include="main.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="runner.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="helper.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dijkstra.h">
@@ -36,6 +42,9 @@
       <Filter>Pliki zasobów</Filter>
     </ClInclude>
     <ClInclude Include="runner.h">
+      <Filter>Pliki zasobów</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.h">
       <Filter>Pliki zasobów</Filter>
     </ClInclude>
   </ItemGroup>
